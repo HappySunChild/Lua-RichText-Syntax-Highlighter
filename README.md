@@ -1,5 +1,5 @@
 # **RichText Highlighter**
-A useful module that can take in a string, parse and apply highlights then return the correctly highlighted string.
+A useful module that can take in a string, parse and apply highlights then return the highlighted version.
 
 ## *Usage*
 Very simple and straightforward to use.
