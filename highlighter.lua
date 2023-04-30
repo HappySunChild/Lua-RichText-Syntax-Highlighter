@@ -68,7 +68,7 @@ local function getHighlight(tokens, index)
     end
 end
 
-function highlighter:getHighlight(code, carryString, carryComment)
+function highlighter:GetHighlight(code, carryString, carryComment)
     local tokens = {}
     local currentToken = ""
     local skipCounter = 0
