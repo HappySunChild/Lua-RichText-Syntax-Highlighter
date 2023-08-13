@@ -1,158 +1,171 @@
 local highlighter = {}
-
-highlighter.lua_keywords = {"and", "break", "or", "else", "elseif", "if", "then", "end", "until", "repeat", "while", "do", "local", "in", "pairs", "ipairs", "return", "function"}
-highlighter.rbx_keywords = {"game", "workspace", "script", "math", "string", "table", "wait", "select", "next", "Enum", "error", "warn", "tick", "assert", "_G", "shared", "loadstring", "tonumber", "tostring", "type", "typeof", "unpack", "print", "Instance", "Vector3", "Vector2", "Color3", "UDim", "UDim2", "Ray", "BrickColor"}
-highlighter.operators = {"#", "+", "-", "*", "%", "/", "^", "=", "~", "=", "<", ">", ",", ".", "(", ")", "{", "}", "[", "]", ";", ":"}
-
-highlighter.colors = {
-    numbers = {hex = "ffc600"},
-    operator = {hex = "e8d228"},
-    lua = {hex = "89ddff"},
-    rbx = {hex = "92b4fd"},
-    str = {hex = "38f157"},
-    comment = {hex = "676e95", italics = true},
-    boolean = {hex = "f78c6c"},
-    null = {hex = "4f4f4f"},
-    call = {hex = "82aaff"},
-    self_call = {hex = "e3c98d"},
-    local_color = {hex = "c792ea"},
-    function_color = {hex = "89ddff", italics = true},
-    local_property = {hex = "81deff"},
+local keywords = {
+	lua = {
+		"and", "break", "or", "else", "elseif", "if", "then", "until", "repeat", "while", "do", "for", "in", "end",
+		"local", "return", "function", "export"
+	},
+	rbx = {
+		"game", "workspace", "script", "math", "string", "table", "task", "wait", "select", "next", "Enum",
+		"error", "warn", "tick", "assert", "shared", "loadstring", "tonumber", "tostring", "type",
+		"typeof", "unpack", "print", "Instance", "CFrame", "Vector3", "Vector2", "Color3", "UDim", "UDim2", "Ray", "BrickColor",
+		"OverlapParams", "RaycastParams", "Axes", "Random", "Region3", "Rect", "TweenInfo",
+		"collectgarbage", "not", "utf8", "pcall", "xpcall", "_G", "setmetatable", "getmetatable", "os", "pairs", "ipairs"
+	},
+	operators = {
+		"#", "+", "-", "*", "%", "/", "^", "=", "~", "=", "<", ">", ",", ".", "(", ")", "{", "}", "[", "]", ";", ":"
+	}
 }
 
-local function swapKeys(tab)
-    for _, value in ipairs(tab) do
-        tab[value] = true
-    end
+local colors = {
+	numbers = Color3.fromRGB(255, 198, 0),
+	boolean = Color3.fromRGB(214, 128, 23),
+	operator = Color3.fromRGB(232, 210, 40),
+	lua = Color3.fromRGB(160, 87, 248),
+	rbx = Color3.fromRGB(146, 180, 253),
+	str = Color3.fromRGB(56, 241, 87),
+	comment = Color3.fromRGB(103, 110, 149),
+	null = Color3.fromRGB(79, 79, 79),
+	call = Color3.fromRGB(130, 170, 255),
+	self_call = Color3.fromRGB(227, 201, 141),
+	local_color = Color3.fromRGB(199, 146, 234),
+	function_color = Color3.fromRGB(241, 122, 124),
+	self_color = Color3.fromRGB(146, 134, 234),
+	local_property = Color3.fromRGB(129, 222, 255),
+}
+
+local function createKeywordSet(list)
+	local keywordSet = {}
+
+	for _, keyword in ipairs(list) do
+		keywordSet[keyword] = true
+	end
+
+	return keywordSet
 end
+
+local luaSet = createKeywordSet(keywords.lua)
+local rbxSet = createKeywordSet(keywords.rbx)
+local operatorsSet = createKeywordSet(keywords.operators)
 
 local function getHighlight(tokens, index)
-    local token = tokens[index]
+	local token = tokens[index]
 
-    if highlighter.colors[token .. "_color"] then
-        return highlighter.colors[token .. "_color"]
-    end
+	if colors[token .. "_color"] then
+		return colors[token .. "_color"]
+	end
 
-    if tonumber(token) then -- number
-        return highlighter.colors.numbers
-    elseif token == "nil" then
-        return highlighter.colors.null
-    elseif token:sub(1, 1) == "-" and token:sub(2, 2) == "-" then
-        return highlighter.colors.comment
-    elseif highlighter.operators[token] then
-        return highlighter.colors.operator
-    elseif highlighter.rbx_keywords[token] then
-        return highlighter.colors.rbx
-    elseif highlighter.lua_keywords[token] then
-        return highlighter.colors.lua
-    elseif token:sub(1, 1) == "\"" or token:sub(1, 1) == "\'" then
-        return highlighter.colors.str
-    elseif token == "true" or token == "false" then
-        return highlighter.colors.boolean
-    end
+	if tonumber(token) then
+		return colors.numbers
+	elseif token == "nil" then
+		return colors.null
+	elseif token:sub(1, 2) == "--" then
+		return colors.comment
+	elseif operatorsSet[token] then
+		return colors.operator
+	elseif luaSet[token] then
+		return colors.lua
+	elseif rbxSet[token] then
+		return colors.rbx
+	elseif token:sub(1, 1) == "\"" or token:sub(1, 1) == "\'" then
+		return colors.str
+	elseif token == "true" or token == "false" then
+		return colors.boolean
+	end
 
-    if tokens[index + 1] == "(" then
-        if tokens[index - 1] == ":" then
-            return highlighter.colors.self_call
-        end
+	if tokens[index + 1] == "(" then
+		if tokens[index - 1] == ":" then
+			return colors.self_call
+		end
 
-        return highlighter.colors.call
-    end
+		return colors.call
+	end
 
-    if tokens[index - 1] == "." then
-        if tokens[index - 2] == "Enum" then
-            return highlighter.colors.rbx
-        end
+	if tokens[index - 1] == "." then
+		if tokens[index - 2] == "Enum" then
+			return colors.rbx
+		end
 
-        return highlighter.colors.local_property
-    end
+		return colors.local_property
+	end
 end
 
-function highlighter:GetHighlight(code, carryString, carryComment)
-    local tokens = {}
-    local currentToken = ""
-    local skipCounter = 0
-    local commentPersist = false
+function highlighter.get(source)
+	local tokens = {}
+	local currentToken = ""
+	
+	local inString = false
+	local inComment = false
+	local commentPersist = false
+	
+	for i = 1, #source do
+		local character = source:sub(i, i)
+		
+		if inComment then
+			if character == "\n" and not commentPersist then
+				table.insert(tokens, currentToken)
+				table.insert(tokens, character)
+				currentToken = ""
+				
+				inComment = false
+			elseif source:sub(i - 1, i) == "]]" and commentPersist then
+				currentToken ..= "]"
+				
+				table.insert(tokens, currentToken)
+				currentToken = ""
+				
+				inComment = false
+				commentPersist = false
+			else
+				currentToken = currentToken .. character
+			end
+		elseif inString then
+			if character == inString and source:sub(i-1, i-1) ~= "\\" or character == "\n" then
+				currentToken = currentToken .. character
+				inString = false
+			else
+				currentToken = currentToken .. character
+			end
+		else
+			if source:sub(i, i + 1) == "--" then
+				table.insert(tokens, currentToken)
+				currentToken = "-"
+				inComment = true
+				commentPersist = source:sub(i + 2, i + 3) == "[["
+			elseif character == "\"" or character == "\'" then
+				table.insert(tokens, currentToken)
+				currentToken = character
+				inString = character
+			elseif operatorsSet[character] then
+				table.insert(tokens, currentToken)
+				table.insert(tokens, character)
+				currentToken = ""
+			elseif character:match("[%w_]") then
+				currentToken = currentToken .. character
+			else
+				table.insert(tokens, currentToken)
+				table.insert(tokens, character)
+				currentToken = ""
+			end
+		end
+	end
+	
+	table.insert(tokens, currentToken)
 
-    local inString = carryString
-    local inComment = carryComment
+	local highlighted = {}
+	
+	for i, token in ipairs(tokens) do
+		local highlight = getHighlight(tokens, i)
 
-    for i = 1, #code do
-        if skipCounter > 0 then
-            skipCounter = skipCounter - 1
-        else
-            local character = code:sub(i, i)
+		if highlight then
+			local syntax = string.format("<font color = \"#%s\">%s</font>", highlight:ToHex(), token:gsub("<", "&lt;"):gsub(">", "&gt;"))
+			
+			table.insert(highlighted, syntax)
+		else
+			table.insert(highlighted, token)
+		end
+	end
 
-            if inComment then -- comment stuff
-                if character == "\n" and not commentPersist then -- exit comment if nextline and not persistant
-                    inComment = false
-                elseif character == "]]" and commentPersist then -- exit comment if persistant comment close and persistant
-                    inComment = false
-                    commentPersist = false
-                else -- add character to the comment token
-                    currentToken = currentToken .. character
-                end
-            elseif inString then -- string stuff
-                if character == "\\" then
-                    currentToken = currentToken .. character .. code:sub(i + 1, i + 1)
-                elseif character == inString then -- exit string
-                    currentToken = currentToken .. character
-                    inString = false
-                else -- add character to the string token
-                    currentToken = currentToken .. character
-                end
-            else -- comment > string > operators > everything else
-                if character == "-" and code:sub(i + 1, i + 1) == "-" then
-                    table.insert(tokens, currentToken)
-                    currentToken = "--"
-                    inComment = true
-                    commentPersist = code:sub(i + 2, i + 2) == "[" and code:sub(i + 3, i + 3) == "["
-                    skipCounter = 1
-                elseif character == "\"" or character == "\'" then
-                    table.insert(tokens, currentToken)
-                    currentToken = character
-                    inString = character
-                elseif highlighter.operators[character] then
-                    table.insert(tokens, currentToken)
-                    table.insert(tokens, character)
-                    currentToken = ""
-                elseif character:match("%w") or character == "_" then
-                    currentToken = currentToken .. character
-                else
-                    table.insert(tokens, currentToken)
-                    table.insert(tokens, character)
-                    currentToken = ""
-                end
-            end
-        end
-    end
-    table.insert(tokens, currentToken)
-
-    local highlighted = ""
-
-    for i, token in pairs(tokens) do
-        local highlight = getHighlight(tokens, i)
-
-        if highlight then
-            local syntax = string.format("<font color = \"#%s\">%s</font>", highlight.hex, token)
-
-            if highlight.bold then
-                syntax = string.format("<b>%s</b>", syntax)
-            elseif highlight.italics then
-                syntax = string.format("<i>%s</i>", syntax)
-            end
-
-            highlighted = highlighted .. syntax
-        else
-            highlighted = highlighted .. token
-        end
-    end
-
-    return highlighted, inString, inComment
+	return table.concat(highlighted)
 end
-
-swapKeys(highlighter.lua_keywords)
-swapKeys(highlighter.rbx_keywords)
-swapKeys(highlighter.operators)
 
 return highlighter
